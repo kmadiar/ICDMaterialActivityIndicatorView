@@ -14,10 +14,16 @@ typedef enum: NSInteger{
     ICDMaterialActivityIndicatorViewStyleLarge
 }ICDMaterialActivityIndicatorViewStyle;
 
+@interface ICDMaterialActivityIndicatorLayer : CAShapeLayer
+@property (nonatomic) CGFloat radius;
+
+@end
+
 @interface ICDMaterialActivityIndicatorView : UIView
 
 - (instancetype)initWithActivityIndicatorStyle:(ICDMaterialActivityIndicatorViewStyle)style;
 - (instancetype)initWithFrame:(CGRect)frame activityIndicatorStyle:(ICDMaterialActivityIndicatorViewStyle)style;
+@property(strong, nonatomic) ICDMaterialActivityIndicatorLayer *indicatorLayer;
 // default is ICDMaterialActivityIndicatorViewStyleSmall
 @property(nonatomic) ICDMaterialActivityIndicatorViewStyle activityIndicatorViewStyle;
 // default is YES

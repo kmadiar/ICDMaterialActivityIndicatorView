@@ -8,11 +8,6 @@
 
 #import "ICDMaterialActivityIndicatorView.h"
 
-@interface ICDMaterialActivityIndicatorLayer : CAShapeLayer
-@property (nonatomic) CGFloat radius;
-
-@end
-
 @implementation ICDMaterialActivityIndicatorLayer
 
 - (instancetype)init{
@@ -34,7 +29,6 @@
 @interface ICDMaterialActivityIndicatorView ()
 @property(nonatomic, readwrite, getter=isAnimating) BOOL animating;
 @property(nonatomic, readwrite, getter=shouldBeAnimating) BOOL shouldBeAnimating;
-@property(strong, nonatomic) ICDMaterialActivityIndicatorLayer *indicatorLayer;
 @end
 
 @implementation ICDMaterialActivityIndicatorView
@@ -61,7 +55,7 @@
             radius = 15;
             break;
         case ICDMaterialActivityIndicatorViewStyleLarge:
-            radius = 30;
+            radius = 40;
             break;
     }
     if (CGRectEqualToRect(frame, CGRectZero)){
@@ -69,7 +63,7 @@
     }
     self = [super initWithFrame:frame];
     if (self){
-
+        
         [self commonInit];
         [self setupForStyle:style];
         self.indicatorLayer.radius = radius;
@@ -77,8 +71,8 @@
     return self;
 }
 
-- (void)setupForStyle: (ICDMaterialActivityIndicatorViewStyle) style {
-
+- (void) setupForStyle: (ICDMaterialActivityIndicatorViewStyle) style {
+    
     switch (style) {
         case ICDMaterialActivityIndicatorViewStyleSmall:
             self.lineWidth = 1.0;
@@ -99,7 +93,7 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-- (void)commonInit {
+- (void) commonInit {
     _hidesWhenStopped = YES;
     _animating = NO;
     self.hidden = YES;
@@ -131,7 +125,7 @@
 }
 
 - (void)onAppDidEnterBackground {
-    self.animating = NO;
+    [self stopAnimating];
 }
 
 - (void)layoutSubviews{
@@ -173,19 +167,17 @@
     CAKeyframeAnimation *inAnimation = [CAKeyframeAnimation animationWithKeyPath:@"strokeEnd"];
     inAnimation.duration = self.duration;
     inAnimation.values = @[@(0), @(1)];
-
+    
     CAKeyframeAnimation *outAnimation = [CAKeyframeAnimation animationWithKeyPath:@"strokeStart"];
     outAnimation.duration = self.duration;
     outAnimation.values = @[@(0), @(0.8), @(1)];
     outAnimation.beginTime = self.duration / 1.5;
-
+    
     CAAnimationGroup *strokeAnimation = [CAAnimationGroup animation];
     strokeAnimation.animations = @[inAnimation, outAnimation];
     strokeAnimation.duration = self.duration + outAnimation.beginTime;
     strokeAnimation.repeatCount = INFINITY;
     strokeAnimation.timeOffset = self.progress;
-    strokeAnimation.removedOnCompletion = NO;
-    strokeAnimation.fillMode = kCAFillModeForwards;
     return strokeAnimation;
 }
 
@@ -196,8 +188,6 @@
     rotateAnimation.duration = self.duration * 1.5;
     rotateAnimation.repeatCount = INFINITY;
     rotateAnimation.timeOffset = self.progress;
-    rotateAnimation.removedOnCompletion = NO;
-    rotateAnimation.fillMode = kCAFillModeForwards;
     return rotateAnimation;
 }
 
@@ -208,7 +198,7 @@
         CAAnimationGroup *strokeAnimation = [self createNewStrokeAnimation];
         strokeAnimation.speed = 0;
         [self.indicatorLayer addAnimation:strokeAnimation forKey:@"rotation"];
-
+        
         CABasicAnimation *rotateAnimation = [self createNewRotateAnimation];
         rotateAnimation.speed = 0;
         [self.indicatorLayer addAnimation:rotateAnimation forKey:@"stroke"];
@@ -216,16 +206,36 @@
     }
 }
 
+-(void)pauseLayer:(CALayer*)layer{
+    CFTimeInterval pausedTime = [layer convertTime:CACurrentMediaTime() fromLayer:nil];
+    layer.speed = 0.0;
+    layer.timeOffset = pausedTime;
+}
+
+-(void)resumeLayer:(CALayer*)layer{
+    CFTimeInterval pausedTime = [layer timeOffset];
+    layer.speed = 1.0;
+    layer.timeOffset = 0.0;
+    layer.beginTime = 0.0;
+    CFTimeInterval timeSincePause = [layer convertTime:CACurrentMediaTime() fromLayer:nil] - pausedTime;
+    layer.beginTime = timeSincePause;
+}
+
 - (void)startAnimating{
     self.shouldBeAnimating = YES;
     self.hidden = NO;
-    [self resetAnimations];
+    if (!self.isAnimating) {
+        [self resetAnimations];
+    }
     self.indicatorLayer.speed = 1;
     self.animating = YES;
 }
 
 - (void)stopAnimating{
     self.shouldBeAnimating = NO;
+    if (!self.isAnimating){
+        return;
+    }
     [UIView animateWithDuration:0.5 animations:^{
         self.alpha = 0.0;
     } completion:^(BOOL finished) {
